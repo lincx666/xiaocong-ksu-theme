@@ -17,9 +17,9 @@
 
 ## 截图
 
-| 首页 | 关于 |
+| 首页 | 图标 |
 | --- | --- |
-| ![首页](docs/images/home.png) | ![关于](docs/images/about.png) |
+| ![首页](docs/images/home.png) | ![图标](docs/images/icon.png) |
 
 ## 版本信息
 
