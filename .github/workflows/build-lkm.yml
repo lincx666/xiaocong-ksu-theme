@@ -1,0 +1,31 @@
+name: Build LKM
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        kmi: [android15-6.6, android16-6.12, android17-6.18]
+    container:
+      image: ghcr.io/ylarod/ddk-min:${{ matrix.kmi }}-20260828
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build kernelsu.ko
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          cd kernel
+          CONFIG_KSU=m CC=clang make \
+            KSU_GIT_VERSION=2680 KSU_VERSION=32680 \
+            KSU_EXPECTED_SIZE=0x0339 \
+            KSU_EXPECTED_HASH=627451eeec41f171518af1010c1621008ccdcb04bf7b04622ad1195c4c020ca9 \
+            KSU_MANAGER_PACKAGE=me.weishu.kernelsu
+          OUT="$GITHUB_WORKSPACE/kernelsu-${{ matrix.kmi }}-xiaocong.ko"
+          cp kernelsu.ko "$OUT"
+          llvm-strip -d "$OUT" || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernelsu-${{ matrix.kmi }}-xiaocong
+          path: kernelsu-*.ko
