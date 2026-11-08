@@ -19,7 +19,7 @@
 
 | 首页 | 图标 |
 | --- | --- |
-| ![首页](docs/images/home.png) | ![图标](docs/images/icon.png) |
+| ![首页](docs/images/home-v2.png) | ![图标](docs/images/icon.png) |
 
 ## 版本信息
 
