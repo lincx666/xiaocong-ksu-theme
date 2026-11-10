@@ -43,6 +43,7 @@ sealed interface Route : NavKey, Parcelable {
 
     @Parcelize
     @Serializable
+        /** 藏形术页面（SUSFS 管理）。 */
     data object Susfs : Route
 
     @Parcelize

@@ -36,6 +36,10 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
+/**
+ * 藏形术页面：显示 SUSFS 状态/版本，管理 guard LKM 与 sus_path 规则，
+ * 以及「画笔签名」（自定义内核版本后缀）的开关。
+ */
 @Composable
 fun SusfsScreen() {
     val navigator = LocalNavigator.current

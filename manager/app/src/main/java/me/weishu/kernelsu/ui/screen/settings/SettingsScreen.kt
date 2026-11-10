@@ -61,6 +61,7 @@ fun SettingPager(
         onSetAutoJailbreak = viewModel::setAutoJailbreak,
         onSetUseSoftReboot = viewModel::setUseSoftReboot,
         onOpenAbout = { navigator.push(Route.About) },
+                // 藏形术入口（设置 → 藏形术）
         onOpenSusfs = { navigator.push(Route.Susfs) },
     )
 

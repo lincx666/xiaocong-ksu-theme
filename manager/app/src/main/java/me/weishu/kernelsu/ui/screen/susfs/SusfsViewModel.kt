@@ -20,6 +20,12 @@ import me.weishu.kernelsu.ui.util.readSusfsVersion
 import me.weishu.kernelsu.ui.util.setUnameSpoofConfig
 import java.io.File
 
+/**
+ * 藏形术页面的 UI 状态。
+ * - loaded/version：guard LKM 是否已加载、内核报告的 SUSFS 版本
+ * - rules：当前 sus_path 规则（已过滤内核保护节点）
+ * - unameEnabled/unameSuffix/unameCurrent：画笔签名配置与当前生效值
+ */
 data class SusfsUiState(
     val loaded: Boolean = false,
     val version: String? = null,
@@ -36,11 +42,18 @@ private const val SUSFS_ASSET = "susfs_guard_lkm-android16-6.12.ko"
 private const val SUSFS_TMP = "/data/local/tmp/susfs_guard_lkm.ko"
 private const val SUSFS_PROC = "/proc/susfs_path"
 
+/**
+ * 藏形术页面的状态管理。
+ *
+ * 所有操作都通过 root shell / SUSFS supercall 完成，失败时只记录 message，
+ * 不会阻塞或影响 KernelSU 的 Root/模块功能。
+ */
 class SusfsViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(SusfsUiState())
     val uiState: StateFlow<SusfsUiState> = _uiState.asStateFlow()
 
+    /** 刷新页面：检测加载状态、读取版本与规则、同步画笔签名配置。 */
     fun refresh() {
         viewModelScope.launch {
             val state = withContext(Dispatchers.IO) {
@@ -67,6 +80,7 @@ class SusfsViewModel : ViewModel() {
         }
     }
 
+    /** 手动重新展开：释放 .ko 并通过 ksud insmod 加载。 */
     fun loadSusfs() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(busy = true, message = "正在展开藏形术…")
@@ -99,6 +113,7 @@ class SusfsViewModel : ViewModel() {
         }
     }
 
+    /** 添加一条 sus_path 隐藏规则（写入 /proc/susfs_path）。 */
     fun addRule(path: String) {
         if (path.isBlank()) return
         viewModelScope.launch {
@@ -116,6 +131,7 @@ class SusfsViewModel : ViewModel() {
         }
     }
 
+    /** 删除指定 sus_path 规则。 */
     fun delRule(path: String) {
         viewModelScope.launch {
             val message = withContext(Dispatchers.IO) {
@@ -132,6 +148,7 @@ class SusfsViewModel : ViewModel() {
         }
     }
 
+    /** 开关画笔签名：保存配置后立即应用（关闭时恢复真实内核版本）。 */
     fun setUnameEnabled(enabled: Boolean) {
         setUnameSpoofConfig(enabled, getUnameSuffix())
         viewModelScope.launch {
@@ -141,6 +158,7 @@ class SusfsViewModel : ViewModel() {
         }
     }
 
+    /** 应用自定义后缀：保存并立即通过 SUSFS supercall 生效。 */
     fun applyUnameSuffix(suffix: String) {
         val trimmed = suffix.trim().takeIf { it.isNotBlank() } ?: DEFAULT_UNAME_SUFFIX
         setUnameSpoofConfig(true, trimmed)
