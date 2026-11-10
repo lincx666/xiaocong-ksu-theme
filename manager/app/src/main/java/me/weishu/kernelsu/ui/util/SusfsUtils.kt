@@ -6,23 +6,16 @@ import me.weishu.kernelsu.ksuApp
 import java.io.File
 
 /*
- * ============================================================================
- * SUSFS 藏形术 · 工具层
- * ============================================================================
+ * 藏形术的"仓库管理员"。
  *
- * 整体思路（为什么这样设计）：
- * 1. SUSFS 是内核侧能力。原厂内核没有编译 SUSFS，所以这里走「guard LKM」方案：
- *    把编译好的 susfs_guard_lkm.ko 在运行时 insmod 进内核，提供 SUSFS 能力。
- * 2. .ko 和两个小工具（susfs_ver / susfs_set_uname）都内嵌在 APK assets 里，
- *    首次使用时才释放到 /data/local/tmp —— 这样管理器是自包含的，用户不用手动推文件。
- * 3. 加载必须走 `ksud insmod`，不能裸 `insmod`：su 域下裸 insmod 会被 SELinux 拒绝，
- *    ksud 的加载通道是 KernelSU 特批的。
- * 4. 所有加载/设置都发生在「管理器运行期间」，绝不写开机脚本 ——
- *    即使 LKM 出问题，最坏结果也只是管理器崩溃/手机重启一次，不会 bootloop。
- * 5. 版本查询、内核后缀伪装都通过 reboot 系统调用（supercall）与内核通信，
- *    命令与 KernelSU-Next 的 susfsd 一致：
- *        syscall(SYS_reboot, 0xDEADBEEF, 0xFAFAFAFA, <CMD>, <struct>)
- *    对应 C 工具源码见仓库 tools/susfs-lkm/。
+ * 干的事：把塞在 APK 里的 guard LKM 和小工具倒腾到手机临时目录，再求 ksud
+ * 把模块挂进内核。别问为什么不直接 insmod —— SELinux 会翻脸，只有 ksud 有通行证。
+ *
+ * 还有个原则：只在你打开管理器的时候动手，绝不写开机脚本。
+ * 万一模块抽风，最多 App 崩溃重启一次，不至于让你手机变砖。
+ *
+ * 跟内核对话靠 reboot 系统调用（supercall），命令跟 KernelSU-Next 那套一样，
+ * 具体结构看 tools/susfs-lkm/ 里的 C 源码。
  */
 
 // ---- 内嵌资产（APK assets）名称与运行时临时路径 -----------------------------
@@ -60,12 +53,7 @@ fun setUnameSpoofConfig(enabled: Boolean, suffix: String) {
         .apply()
 }
 
-/**
- * 把 APK assets 里的文件释放到 /data/local/tmp。
- *
- * 流程：assets → App cacheDir → root shell 复制到 /data/local/tmp 并 chmod。
- * 返回 false 表示复制失败（权限/空间问题），调用方应跳过后续操作。
- */
+/** 把 assets 里的东西掏出来，放到 /data/local/tmp。要执行的加 755，模块给 644。 */
 private fun stageAsset(assetName: String, tmpPath: String, executable: Boolean = false): Boolean {
     return try {
         val cached = File(ksuApp.cacheDir, assetName)
@@ -84,18 +72,16 @@ private fun stageAsset(assetName: String, tmpPath: String, executable: Boolean =
     }
 }
 
-/** 确保版本查询工具已就绪（可执行）。 */
+/** 把版本查询那个小工具摆好（可执行）。 */
 fun ensureSusfsVerTool(): Boolean = stageAsset(SUSFS_VER_ASSET, SUSFS_VER_TMP, executable = true)
 
-/** 确保内核后缀设置工具已就绪（可执行）。 */
+/** 把改后缀的工具摆好（可执行）。 */
 fun ensureSusfsSetUnameTool(): Boolean = stageAsset(SUSFS_SET_UNAME_ASSET, SUSFS_SET_UNAME_TMP, executable = true)
 
 /**
- * 查询当前内核提供的 SUSFS 版本。
- *
- * 前置条件：/proc/susfs_path 存在（guard LKM 已加载）。
- * 查询方式：susfs_ver 工具通过 reboot supercall（CMD_SUSFS_SHOW_VERSION）
- * 向内核要版本字符串，例如 "v2.3.0"；不支持时返回 null。
+ * 问内核要 SUSFS 版本号。
+ * /proc/susfs_path 不在 = 模块没挂上，直接 null。
+ * 工具回 "unsupported" 的也当没有——老内核没这接口。
  */
 fun readSusfsVersion(): String? {
     return try {
@@ -119,17 +105,12 @@ fun readSusfsVersion(): String? {
 }
 
 /**
- * 管理器启动时自动展开藏形术（加载 guard LKM）。
+ * 管理器一打开就自动把藏形术展开。
  *
- * 安全设计：只在 App 运行时执行，不写开机脚本。如果 LKM 加载导致内核异常，
- * 最坏只是 App 崩溃/手机重启一次；重启后 App 不会自动运行，因此不会 bootloop。
+ * 顺序很简单：看 /proc/susfs_path 在不在（在 = 已经挂过，跳过），不在就把 .ko
+ * 搬进临时目录，ksud insmod 挂上，顺手把画笔签名也盖上，最后把版本号报上去。
  *
- * 流程：
- *   1. 检测 /proc/susfs_path —— 已加载则跳过加载（幂等）
- *   2. 未加载：从 assets 释放 .ko 到 /data/local/tmp
- *   3. 通过 ksud insmod 加载（ksud 的加载通道有 KernelSU 的 SELinux 特权）
- *   4. 应用画笔签名（内核版本后缀伪装）
- *   5. 返回 SUSFS 版本供首页显示
+ * 只在 App 里跑，不进开机流程——出问题最多重启一次，不会无限循环。
  */
 fun ensureSusfsAutoLoaded(): String? {
     return try {
@@ -156,14 +137,13 @@ fun ensureSusfsAutoLoaded(): String? {
 }
 
 /**
- * 应用 / 恢复「画笔签名」（SUSFS SPOOF_UNAME）。
+ * 盖画笔签名，改内核版本后缀。
  *
- * 开启时：把内核版本伪装成 <真实前缀>-<后缀>，例如 6.12.38-android16-xiaocong，
- *         version 字段设为「小葱特供版」。任何进程调 uname() 都会看到伪装值。
- * 关闭时：用 "default" 参数让内核恢复真实的 utsname release/version。
+ * 开着：6.12.38-android16-5-gxxxx 会变成 6.12.38-android16-<后缀>，
+ * uname 的版本字段写成「小葱特供版」。
+ * 关着：发个 default，让内核把真实版本还回来。
  *
- * 注意：这只是「显示层」伪装（kretprobe hook newuname 系统调用），
- * 内核本体没有改动，功能与真实内核一致。
+ * 就是层皮，内核本体没动——专门骗检测工具那种。
  */
 fun applySusfsUnameSpoof() {
     try {

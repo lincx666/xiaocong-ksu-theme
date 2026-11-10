@@ -73,7 +73,7 @@ class HomeViewModel(
             checkUpdateEnabled = false,
             latestVersionInfo = LatestVersionInfo(),
             currentManagerVersionCode = managerVersion.versionCode,
-                        // 管理器启动时自动展开藏形术（运行时加载 guard LKM，失败不影响 Root）
+                        // 打开管理器就自动把藏形术展开（运行时加载，炸了也不影响开机）
             susfsVersion = ensureSusfsAutoLoaded(),
             systemInfo = SystemInfo(
                 kernelVersion = Os.uname().release,

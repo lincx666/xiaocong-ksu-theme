@@ -22,8 +22,8 @@ fun resolveDeviceName(): String {
     val marketName = when (Build.MANUFACTURER.orEmpty().lowercase()) {
         "samsung" -> getSamsungProductName()
         "xiaomi" -> getSystemProperty("ro.product.marketname").takeIfValidDeviceName()
-                // OPPO/一加系：优先读取改机模块设置的 ro.product.marketname（可被伪装），
-        // 没有再回退到官方的 vendor 属性 —— 这样改机后的机型也能被管理器识别。
+                // 绿厂的机型识别：先看家规（ro.product.marketname，改机模块改的就是它），
+        // 没有才翻官方名册（vendor 属性）——这样改过机型的也能认出来。
         "oppo", "oneplus", "realme", "oplus" ->
             getSystemProperty("ro.product.marketname").takeIfValidDeviceName()
                 ?: getSystemProperty("ro.vendor.oplus.market.name").takeIfValidDeviceName()

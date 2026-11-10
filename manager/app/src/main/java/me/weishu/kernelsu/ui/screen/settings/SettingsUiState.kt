@@ -82,6 +82,6 @@ data class SettingsScreenActions(
     val onSetAutoJailbreak: (Boolean) -> Unit,
     val onSetUseSoftReboot: (Boolean) -> Unit,
     val onOpenAbout: () -> Unit,
-        /** 打开藏形术（SUSFS 管理）页面。 */
+        /** 跳到藏形术页面。 */
     val onOpenSusfs: () -> Unit,
 )
