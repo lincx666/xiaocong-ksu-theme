@@ -14,6 +14,21 @@
 - 启动动画、应用图标、关于页均为小葱主题
 - 管理器使用**自定义 v2-only 签名**，配套 LKM 信任该签名
 - APK 内置 `android16-6.12` 自定义 LKM（免导入）
+- **SUSFS 藏形术集成**：不换内核启用 SUSFS（guard LKM），详见下方章节
+
+## SUSFS 藏形术（v3.3.1-susfs）
+
+不换内核启用 SUSFS（guard LKM 方案）：
+
+- **藏形术页面**（设置 → 藏形术）：SUSFS 状态/版本探测（reboot supercall，与 KernelSU-Next 同接口）、guard LKM 加载、sus_path 规则管理
+- **自动展开**：管理器启动时自动 `ksud insmod` guard LKM（运行时加载，无 bootloop 风险）
+- **画笔签名**：SUSFS SPOOF_UNAME 自定义内核版本后缀（如 `6.12.38-android16-xiaocong`），开关可随时切回真实版本
+- **首页显示**：画卷之核 / 藏形术版本
+- **设备识别**：OPPO/一加分支优先读取 `ro.product.marketname`，识别改机后的机型
+- 内嵌 `susfs_guard_lkm-android16-6.12.ko`（来自 [susfs4ksu-for-lkm](https://github.com/inforcqb/susfs4ksu-for-lkm) v2.3.0）与 `susfs_ver` / `susfs_set_uname` 工具
+
+> SUSFS 能力由 guard LKM 提供（内核未编译 SUSFS 时加载即用）；规则通过 `/proc/susfs_*` 下发。
+> 工具源码见 `tools/susfs-lkm/`。
 
 ## 截图
 
@@ -28,6 +43,7 @@
 | 基座 | KernelSU v3.3.1（Manager 32680 / UAPI 5） |
 | 包名 | `me.weishu.kernelsu` |
 | versionCode | 32680 |
+| SUSFS | guard LKM v2.3.0（susfs4ksu-for-lkm） |
 | 签名 | v2-only，自定义证书 |
 
 ### 签名参数
