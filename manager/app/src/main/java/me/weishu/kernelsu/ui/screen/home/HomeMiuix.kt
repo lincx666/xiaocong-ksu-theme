@@ -157,7 +157,7 @@ fun HomePagerMiuix(
                                 actions = actions,
                             )
                             DeepSeekDeviceHintCard(deviceModel = state.systemInfo.deviceModel)
-                            InfoCard(systemInfo = state.systemInfo)
+                            InfoCard(systemInfo = state.systemInfo, susfsVersion = state.susfsVersion)
                             DeepSeekCreditCard()
                             DonateCard(onOpenUrl = actions.onOpenUrl)
                             LearnMoreCard(onOpenUrl = actions.onOpenUrl)
@@ -445,7 +445,7 @@ private fun DonateCard(onOpenUrl: (String) -> Unit) {
 }
 
 @Composable
-private fun InfoCard(systemInfo: SystemInfo) {
+private fun InfoCard(systemInfo: SystemInfo, susfsVersion: String? = null) {
     @Composable
     fun InfoText(
         title: String,
@@ -491,6 +491,9 @@ private fun InfoCard(systemInfo: SystemInfo) {
             InfoDivider()
             Spacer(Modifier.height(12.dp))
             InfoText(title = stringResource(R.string.home_kernel), content = systemInfo.kernelVersion)
+            InfoDivider()
+            Spacer(Modifier.height(12.dp))
+            InfoText(title = "藏形术", content = susfsVersion ?: "尚未展开")
             InfoDivider()
             Spacer(Modifier.height(12.dp))
             InfoText(title = stringResource(R.string.home_fingerprint), content = systemInfo.fingerprint)
@@ -595,7 +598,7 @@ private fun HomeScreenPreviewContent(
                 ),
                 actions = actions
             )
-            InfoCard(previewSystemInfo.copy(selinuxStatus = selinuxStatus))
+            InfoCard(previewSystemInfo.copy(selinuxStatus = selinuxStatus), susfsVersion = "v2.3.0")
             DonateCard(onOpenUrl = {})
             LearnMoreCard(onOpenUrl = {})
         }

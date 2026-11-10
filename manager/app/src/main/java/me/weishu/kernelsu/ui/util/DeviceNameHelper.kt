@@ -23,7 +23,8 @@ fun resolveDeviceName(): String {
         "samsung" -> getSamsungProductName()
         "xiaomi" -> getSystemProperty("ro.product.marketname").takeIfValidDeviceName()
         "oppo", "oneplus", "realme", "oplus" ->
-            getSystemProperty("ro.vendor.oplus.market.name").takeIfValidDeviceName()
+            getSystemProperty("ro.product.marketname").takeIfValidDeviceName()
+                ?: getSystemProperty("ro.vendor.oplus.market.name").takeIfValidDeviceName()
 
         "vivo" -> getSystemProperty("ro.vivo.market.name").takeIfValidDeviceName()
         "honor", "huawei" -> getSystemProperty("ro.config.marketing_name").takeIfValidDeviceName()

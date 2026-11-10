@@ -441,6 +441,19 @@ fun SettingPagerMiuix(
                             onDismissRequest = { showSendLogDialog.value = false },
                             loadingDialog = loadingDialog
                         )
+                        val susfs = "藏形术"
+                        ArrowPreference(
+                            title = susfs,
+                            startAction = {
+                                Icon(
+                                    Icons.Rounded.Security,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = susfs,
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            onClick = actions.onOpenSusfs,
+                        )
                         val about = stringResource(id = R.string.about)
                         ArrowPreference(
                             title = about,

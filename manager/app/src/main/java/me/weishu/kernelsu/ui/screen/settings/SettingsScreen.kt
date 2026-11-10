@@ -61,6 +61,7 @@ fun SettingPager(
         onSetAutoJailbreak = viewModel::setAutoJailbreak,
         onSetUseSoftReboot = viewModel::setUseSoftReboot,
         onOpenAbout = { navigator.push(Route.About) },
+        onOpenSusfs = { navigator.push(Route.Susfs) },
     )
 
     when (LocalUiMode.current) {
